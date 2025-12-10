@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expenses - Splitpush</title>
+    <script>
+        // Apply theme immediately to prevent flash
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="nav-brand">Splitpush</h1>
+            <button class="hamburger-menu" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-links" id="nav-links">
+                <a th:href="@{/dashboard}" class="nav-link">Dashboard</a>
+                <a th:href="@{/groups}" class="nav-link">Groups</a>
+                <a th:href="@{/settlements}" class="nav-link">Settlements</a>
+                <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">🌙</button>
+                <a th:href="@{/api/auth/logout}" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h2>Expenses - <span id="group-name"></span></h2>
+            <button class="btn btn-primary" onclick="showCreateExpenseModal()">Add Expense</button>
+        </div>
+
+        <div id="expenses-container" class="expenses-list">
+            <div class="loading">Loading expenses...</div>
+        </div>
+
+        <div id="pagination-container" class="pagination-container" style="display: none;"></div>
+
+        <div id="no-expenses" class="empty-state" style="display: none;">
+            <p>No expenses yet. Add your first expense!</p>
+        </div>
+    </div>
+
+    <!-- Create Expense Modal -->
+    <div id="create-expense-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeCreateExpenseModal()">&times;</span>
+            <h3>Add Expense</h3>
+            <form id="create-expense-form">
+                <div class="form-group">
+                    <label for="expense-description">Description</label>
+                    <input type="text" id="expense-description" name="description" required>
+                </div>
+                <div class="form-group">
+                    <label for="expense-amount">Amount</label>
+                    <input type="number" id="expense-amount" name="amount" step="0.01" min="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="expense-paid-by">Paid By</label>
+                    <select id="expense-paid-by" name="paidByUserId" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Split Among</label>
+                    <div id="participants-list"></div>
+                    <div class="split-actions">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="selectAllParticipants()">Select All</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="deselectAllParticipants()">Deselect All</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="splitEqually()">Split Equally</button>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateExpenseModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Expense</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const groupId = new URLSearchParams(window.location.search).get('groupId');
+    </script>
+    <script th:src="@{/js/theme-toggle.js}"></script>
+    <script th:src="@{/js/mobile-menu.js}"></script>
+    <script th:src="@{/js/expenses.js}"></script>
+</body>
+</html>
+

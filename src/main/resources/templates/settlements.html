@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settlements - Splitpush</title>
+    <script>
+        // Apply theme immediately to prevent flash
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="nav-brand">Splitpush</h1>
+            <button class="hamburger-menu" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-links" id="nav-links">
+                <a th:href="@{/dashboard}" class="nav-link">Dashboard</a>
+                <a th:href="@{/groups}" class="nav-link">Groups</a>
+                <a th:href="@{/settlements}" class="nav-link active">Settlements</a>
+                <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">🌙</button>
+                <a th:href="@{/api/auth/logout}" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2>Your Settlements</h2>
+        <p class="subtitle">View all your recorded settlements</p>
+
+        <div id="settlements-container" class="settlements-list">
+            <div class="loading">Loading settlements...</div>
+        </div>
+
+        <div id="settlements-pagination" class="pagination-container" style="display: none;"></div>
+
+        <div id="no-settlements" class="empty-state" style="display: none;">
+            <p>No settlements recorded yet.</p>
+        </div>
+    </div>
+
+    <script th:src="@{/js/theme-toggle.js}"></script>
+    <script th:src="@{/js/mobile-menu.js}"></script>
+    <script th:src="@{/js/settlements.js}"></script>
+</body>
+</html>
+

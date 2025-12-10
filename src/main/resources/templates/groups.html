@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Groups - Splitpush</title>
+    <script>
+        // Apply theme immediately to prevent flash
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="nav-brand">Splitpush</h1>
+            <button class="hamburger-menu" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-links" id="nav-links">
+                <a th:href="@{/dashboard}" class="nav-link">Dashboard</a>
+                <a th:href="@{/groups}" class="nav-link active">Groups</a>
+                <a th:href="@{/settlements}" class="nav-link">Settlements</a>
+                <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">🌙</button>
+                <a th:href="@{/api/auth/logout}" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="page-header">
+            <h2>Trip Groups</h2>
+            <div class="header-buttons">
+                <button class="btn btn-secondary" onclick="showJoinGroupModal()">Join Group</button>
+                <button class="btn btn-primary" onclick="showCreateGroupModal()">Create Group</button>
+            </div>
+        </div>
+
+        <div id="groups-container" class="groups-grid">
+            <div class="loading">Loading groups...</div>
+        </div>
+
+        <div id="no-groups" class="empty-state" style="display: none;">
+            <p>You don't have any groups yet. Create one to get started!</p>
+        </div>
+    </div>
+
+    <!-- Join Group Modal -->
+    <div id="join-group-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeJoinGroupModal()">&times;</span>
+            <h3>Join Group</h3>
+            <form id="join-group-form">
+                <div class="form-group">
+                    <label for="group-id">Group ID</label>
+                    <input type="text" id="group-id" name="groupId" required placeholder="Enter group ID (ULID)">
+                    <small>Ask the group creator for the group ID</small>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeJoinGroupModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Join Group</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Member Modal -->
+    <div id="add-member-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeAddMemberModal()">&times;</span>
+            <h3>Add Member to Group</h3>
+            <form id="add-member-form">
+                <input type="hidden" id="add-member-group-id">
+                <div class="form-group">
+                    <label for="member-search">Search by Username</label>
+                    <input type="text" id="member-search" name="search" placeholder="Type username to search..." autocomplete="off">
+                    <div id="member-search-results" class="search-results"></div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeAddMemberModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Group Modal -->
+    <div id="create-group-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeCreateGroupModal()">&times;</span>
+            <h3>Create New Group</h3>
+            <form id="create-group-form">
+                <div class="form-group">
+                    <label for="group-name">Group Name</label>
+                    <input type="text" id="group-name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="group-description">Description (optional, max 36 characters)</label>
+                    <textarea id="group-description" name="description" rows="3" maxlength="36"></textarea>
+                    <small id="group-description-count" style="color: #999;">0/36 characters</small>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeCreateGroupModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Group</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Group Modal -->
+    <div id="edit-description-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditDescriptionModal()">&times;</span>
+            <h3>Edit Group</h3>
+            <form id="edit-description-form">
+                <input type="hidden" id="edit-description-group-id">
+                <div class="form-group">
+                    <label for="edit-group-name">Group Name</label>
+                    <input type="text" id="edit-group-name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-description-text">Description (max 36 characters)</label>
+                    <textarea id="edit-description-text" name="description" rows="3" maxlength="36"></textarea>
+                    <small id="edit-description-count" style="color: #999;">0/36 characters</small>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditDescriptionModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script th:src="@{/js/theme-toggle.js}"></script>
+    <script th:src="@{/js/mobile-menu.js}"></script>
+    <script th:src="@{/js/groups.js}"></script>
+</body>
+</html>
+

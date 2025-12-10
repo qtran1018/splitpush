@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Splitpush</title>
+    <script>
+        // Apply theme immediately to prevent flash
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="nav-brand">Splitpush</h1>
+            <button class="hamburger-menu" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="nav-links" id="nav-links">
+                <a th:href="@{/dashboard}" class="nav-link active">Dashboard</a>
+                <a th:href="@{/groups}" class="nav-link">Groups</a>
+                <a th:href="@{/settlements}" class="nav-link">Settlements</a>
+                <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">🌙</button>
+                <a th:href="@{/api/auth/logout}" class="nav-link">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2>Your Balances</h2>
+        <p class="subtitle">See who owes you and who you owe</p>
+
+        <div id="balances-container" class="balances-container">
+            <div class="loading">Loading balances...</div>
+        </div>
+
+        <div id="no-balances" class="empty-state" style="display: none;">
+            <p>You're all settled up! No outstanding balances.</p>
+        </div>
+    </div>
+
+    <!-- Record Settlement Modal -->
+    <div id="settlement-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close" onclick="closeSettlementModal()">&times;</span>
+            <h3>Record Settlement</h3>
+            <form id="settlement-form">
+                <input type="hidden" id="settlement-payee-id">
+                <input type="hidden" id="settlement-payee-name">
+                <div class="form-group">
+                    <label for="settlement-group">Group</label>
+                    <select id="settlement-group" name="tripGroupId" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="settlement-amount">Amount Paid</label>
+                    <input type="number" id="settlement-amount" name="amount" step="0.01" min="0.01" required>
+                    <small>Amount you paid to <span id="settlement-payee-display"></span></small>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeSettlementModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Record Settlement</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script th:src="@{/js/theme-toggle.js}"></script>
+    <script th:src="@{/js/mobile-menu.js}"></script>
+    <script th:src="@{/js/dashboard.js}"></script>
+</body>
+</html>
+
