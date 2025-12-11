@@ -24,9 +24,107 @@ A Spring Boot web application similar to Splitwise where users can create accoun
 
 ## Prerequisites
 
-- Java 17 or higher (tested with Java 25)
-- Maven 3.6+
-- Docker and Docker Compose (for PostgreSQL database)
+- **Docker** and **Docker Compose** (recommended for easy setup)
+- Or alternatively: Java 17+ and Maven 3.6+ for local development
+
+## Getting Started
+
+### Option 1: Docker Compose (Recommended)
+
+The easiest way to run the application is using Docker Compose, which will build and run both the database and the application together.
+
+1. **Clone or navigate to the project directory**
+   ```bash
+   cd Splitpush
+   ```
+
+2. **Build and start all services**
+   ```bash
+   docker-compose up -d --build
+   ```
+   
+   **Note**: If you encounter network/DNS issues during the build (Maven can't download dependencies), try:
+   
+   **Option A: Build with host network (Linux/Mac)**
+   ```bash
+   docker-compose build --network=host
+   docker-compose up -d
+   ```
+   
+   **Option B: Configure Docker DNS**
+   Create/edit `~/.docker/daemon.json` (or Docker Desktop settings) and add:
+   ```json
+   {
+     "dns": ["8.8.8.8", "8.8.4.4"]
+   }
+   ```
+   
+   This will:
+   - Build the Spring Boot application Docker image
+   - Start PostgreSQL database
+   - Start the application
+   - Wait for the database to be healthy before starting the app
+
+3. **View logs**
+   ```bash
+   # View all logs
+   docker-compose logs -f
+   
+   # View app logs only
+   docker-compose logs -f app
+   
+   # View database logs only
+   docker-compose logs -f postgres
+   ```
+
+4. **Access the application**
+   - Open your browser and navigate to: http://localhost:8080
+   - The database is available at `localhost:5432`
+
+5. **Stop the services**
+   ```bash
+   docker-compose down
+   ```
+
+6. **Stop and remove all data**
+   ```bash
+   docker-compose down -v
+   ```
+
+### Option 2: Local Development
+
+For local development without Docker:
+
+1. **Start the database only**
+   ```bash
+   docker-compose up -d postgres
+   ```
+
+2. **Build the project**
+   ```bash
+   mvn clean install
+   ```
+
+3. **Run the application**
+   ```bash
+   mvn spring-boot:run
+   ```
+   
+   Or run the main class `SplitpushApplication` from your IDE.
+
+4. **Access the application**
+   - Open your browser and navigate to: http://localhost:8080
+
+The application will automatically create the database schema on first startup.
+
+### Troubleshooting Docker Build Issues
+
+If you encounter network connectivity issues during Docker build:
+
+1. **Check Docker DNS settings** - Configure DNS in Docker Desktop settings or `~/.docker/daemon.json`
+2. **Try building with host network** (Linux/Mac): `docker-compose build --network=host`
+3. **Pre-build JAR locally** - Build with `mvn clean package -DskipTests` first, then rebuild Docker image
+4. **Check network connectivity** - Ensure Docker can reach Maven Central repositories
 
 ## Usage
 
@@ -36,8 +134,7 @@ A Spring Boot web application similar to Splitwise where users can create accoun
 - Click "Register"
 
 ### 2. Login
-- Use your **email** and password to login at http://localhost:8080/login
-- Note: Authentication uses email instead of username
+- Use your **email** and password to login.
 
 ### 3. Create a Trip Group
 - Click on "Groups" in the navigation
@@ -151,11 +248,30 @@ src/
 
 ## Database
 
-- The application uses PostgreSQL running in Docker.
-- Data persists between application restarts.
-- Database connection details are in `application.properties`.
-- To stop the database: `docker-compose down`
-- To remove all data: `docker-compose down -v`
+### Local Development
+- PostgreSQL running in Docker (via docker-compose)
+- Data persists between application restarts (stored in Docker volume `postgres_data`)
+- Database connection details:
+  - Docker: Uses service name `postgres` on internal network
+  - Local: Uses `localhost:5432`
+- Configuration files:
+  - `application.properties` - Local development
+  - `application-docker.properties` - Docker environment (uses `postgres` hostname, supports environment variables)
+- To stop services: `docker-compose down`
+- To remove all data: `docker-compose down -v` or use `TRUNCATE` commands
+
+### Production Deployment (Supabase)
+- External PostgreSQL database hosted on Supabase
+- SSL connection required (`sslmode=require`)
+- Configuration via environment variables (see `RENDER_DEPLOYMENT.md`)
+- Supports both local Docker PostgreSQL and external databases via environment variable overrides
+
+### Docker Configuration
+- **Dockerfile**: Multi-stage build for optimized image size
+- **docker-compose.yml**: Orchestrates database and application services (supports environment variable overrides)
+- **.dockerignore**: Excludes unnecessary files from build context
+- Application waits for database health check before starting
+- Services run on internal Docker network for secure communication
 
 ## Key Features & Implementation Details
 
@@ -190,12 +306,33 @@ src/
 - Group ID sharing for easy joining
 - Balance validation prevents leaving groups with debts
 
-### Database
-- PostgreSQL running in Docker
-- Data persists between application restarts
-- Database connection details are in `application.properties`
-- To stop the database: `docker-compose down`
-- To remove all data: `docker-compose down -v` or use `TRUNCATE` commands
+
+## Deployment
+
+### Deploy to Render with Supabase
+
+The application is configured to deploy to Render using Docker, with Supabase as the PostgreSQL database provider.
+
+**Quick Start:**
+1. See `RENDER_DEPLOYMENT.md` for detailed step-by-step instructions
+2. Set up a Supabase project and get connection details
+3. Create a Web Service on Render
+4. Configure environment variables (see `.env.example` for reference)
+5. Deploy!
+
+**Key Files:**
+- `RENDER_DEPLOYMENT.md` - Complete deployment guide
+- `.env.example` - Environment variable template
+- `application-production.properties` - Production configuration profile
+- `Dockerfile` - Multi-stage Docker build
+
+**Required Environment Variables for Render:**
+- `SPRING_PROFILES_ACTIVE=production`
+- `SPRING_DATASOURCE_URL` - Supabase JDBC connection string
+- `SPRING_DATASOURCE_USERNAME` - Supabase database username
+- `SPRING_DATASOURCE_PASSWORD` - Supabase database password
+
+See `RENDER_DEPLOYMENT.md` for complete setup instructions.
 
 ## Future Enhancements
 

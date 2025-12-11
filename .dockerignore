@@ -1,0 +1,22 @@
+target/
+.git/
+.gitignore
+.mvn/
+mvnw
+mvnw.cmd
+.idea/
+.vscode/
+*.iml
+*.log
+data/
+.DS_Store
+# Allow app.jar for simple Dockerfile builds
+!app.jar
+# Exclude .env files but allow .env.example (template)
+.env
+.env.local
+.env.*.local
+# Exclude documentation from build context (not needed in image)
+*.md
+!README.md
+
