@@ -1,20 +1,19 @@
-document.getElementById('register-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const formData = {
-        username: document.getElementById('username').value,
-        email: document.getElementById('email').value,
-        name: document.getElementById('name').value,
-        password: document.getElementById('password').value
-    };
+const registerForm = document.getElementById('register-form');
+if (registerForm) {
+    protectFormSubmission(registerForm, async (e) => {
+        const formData = {
+            username: document.getElementById('username').value,
+            email: document.getElementById('email').value,
+            name: document.getElementById('name').value,
+            password: document.getElementById('password').value
+        };
 
-    const errorDiv = document.getElementById('error-message');
-    const successDiv = document.getElementById('success-message');
-    
-    errorDiv.style.display = 'none';
-    successDiv.style.display = 'none';
+        const errorDiv = document.getElementById('error-message');
+        const successDiv = document.getElementById('success-message');
+        
+        errorDiv.style.display = 'none';
+        successDiv.style.display = 'none';
 
-    try {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
             headers: {
@@ -34,10 +33,11 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
         } else {
             errorDiv.textContent = data.error || 'Registration failed';
             errorDiv.style.display = 'block';
+            throw new Error('Registration failed'); // Re-enable form on error
         }
-    } catch (error) {
-        errorDiv.textContent = 'An error occurred. Please try again.';
-        errorDiv.style.display = 'block';
-    }
-});
+    }, {
+        loadingText: 'Registering...',
+        submitButtonSelector: 'button[type="submit"]'
+    });
+}
 

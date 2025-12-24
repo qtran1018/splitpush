@@ -378,10 +378,32 @@ function showEditExpenseModal(expense) {
     modal.style.display = 'flex';
 }
 
+// Track delete operations to prevent duplicates
+const deleteOperations = new Set();
+
 async function deleteExpense(expenseId) {
     if (!confirm('Are you sure you want to delete this expense?')) {
         return;
     }
+    
+    // Prevent duplicate delete operations
+    if (deleteOperations.has(expenseId)) {
+        console.warn('Delete operation already in progress for expense:', expenseId);
+        return;
+    }
+    
+    deleteOperations.add(expenseId);
+    
+    // Find and disable the delete button
+    const deleteButtons = document.querySelectorAll(`button[onclick*="deleteExpense(${expenseId})"]`);
+    const originalTexts = [];
+    deleteButtons.forEach((btn, idx) => {
+        originalTexts[idx] = btn.textContent;
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        btn.textContent = 'Deleting...';
+    });
     
     try {
         const response = await fetch(`/api/expenses/${expenseId}`, {
@@ -398,6 +420,17 @@ async function deleteExpense(expenseId) {
     } catch (error) {
         console.error('Error deleting expense:', error);
         alert('An error occurred. Please try again.');
+    } finally {
+        // Re-enable buttons after a delay
+        setTimeout(() => {
+            deleteOperations.delete(expenseId);
+            deleteButtons.forEach((btn, idx) => {
+                btn.disabled = false;
+                btn.style.opacity = '';
+                btn.style.cursor = '';
+                btn.textContent = originalTexts[idx];
+            });
+        }, 500);
     }
 }
 
@@ -415,45 +448,44 @@ function closeCreateExpenseModal() {
     submitButton.textContent = 'Add Expense';
 }
 
-// Update form submit handler to support both create and edit
-document.getElementById('create-expense-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const form = e.target;
-    const expenseId = form.dataset.expenseId;
-    const isEdit = !!expenseId;
-    
-    const description = document.getElementById('expense-description').value;
-    const amount = parseFloat(document.getElementById('expense-amount').value);
-    const paidByUserId = parseInt(document.getElementById('expense-paid-by').value);
-    
-    const participantAmounts = {};
-    document.querySelectorAll('.participant-checkbox:checked').forEach(checkbox => {
-        const userId = parseInt(checkbox.value);
-        const amountInput = document.querySelector(`.participant-amount[data-user-id="${userId}"]`);
-        const participantAmount = parseFloat(amountInput.value) || 0;
+// Update form submit handler to support both create and edit with duplicate prevention
+const expenseForm = document.getElementById('create-expense-form');
+if (expenseForm) {
+    protectFormSubmission(expenseForm, async (e) => {
+        const form = e.target;
+        const expenseId = form.dataset.expenseId;
+        const isEdit = !!expenseId;
         
-        if (participantAmount > 0) {
-            participantAmounts[userId] = participantAmount;
+        const description = document.getElementById('expense-description').value;
+        const amount = parseFloat(document.getElementById('expense-amount').value);
+        const paidByUserId = parseInt(document.getElementById('expense-paid-by').value);
+        
+        const participantAmounts = {};
+        document.querySelectorAll('.participant-checkbox:checked').forEach(checkbox => {
+            const userId = parseInt(checkbox.value);
+            const amountInput = document.querySelector(`.participant-amount[data-user-id="${userId}"]`);
+            const participantAmount = parseFloat(amountInput.value) || 0;
+            
+            if (participantAmount > 0) {
+                participantAmounts[userId] = participantAmount;
+            }
+        });
+        
+        // Validate that participant amounts sum to total
+        const totalParticipantAmount = Object.values(participantAmounts).reduce((sum, amt) => sum + amt, 0);
+        if (Math.abs(totalParticipantAmount - amount) > 0.01) {
+            alert(`Participant amounts ($${totalParticipantAmount.toFixed(2)}) must equal total amount ($${amount.toFixed(2)})`);
+            throw new Error('Validation failed'); // Stop submission
         }
-    });
-    
-    // Validate that participant amounts sum to total
-    const totalParticipantAmount = Object.values(participantAmounts).reduce((sum, amt) => sum + amt, 0);
-    if (Math.abs(totalParticipantAmount - amount) > 0.01) {
-        alert(`Participant amounts ($${totalParticipantAmount.toFixed(2)}) must equal total amount ($${amount.toFixed(2)})`);
-        return;
-    }
-    
-    const expenseData = {
-        description,
-        amount,
-        paidByUserId,
-        tripGroupId: groupId, // ULID is a string
-        participantAmounts
-    };
-    
-    try {
+        
+        const expenseData = {
+            description,
+            amount,
+            paidByUserId,
+            tripGroupId: groupId, // ULID is a string
+            participantAmounts
+        };
+        
         const url = isEdit ? `/api/expenses/${expenseId}` : '/api/expenses';
         const method = isEdit ? 'PUT' : 'POST';
         
@@ -472,12 +504,13 @@ document.getElementById('create-expense-form').addEventListener('submit', async 
         } else {
             const data = await response.json();
             alert('Error: ' + (data.error || `Failed to ${isEdit ? 'update' : 'create'} expense`));
+            throw new Error('Request failed'); // Re-enable form on error
         }
-    } catch (error) {
-        console.error(`Error ${isEdit ? 'updating' : 'creating'} expense:`, error);
-        alert('An error occurred. Please try again.');
-    }
-});
+    }, {
+        loadingText: 'Saving...',
+        submitButtonSelector: 'button[type="submit"]'
+    });
+}
 
 // Load group and expenses on page load
 document.addEventListener('DOMContentLoaded', loadGroup);

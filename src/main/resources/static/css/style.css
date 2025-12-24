@@ -1,18 +1,18 @@
 :root {
-    /* Light mode colors */
-    --bg-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    /* Light mode colors - Modern, clean design */
+    --bg-primary: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
     --bg-secondary: #ffffff;
-    --bg-tertiary: rgba(255, 255, 255, 0.9);
-    --text-primary: #333333;
-    --text-secondary: #666666;
-    --text-tertiary: #999999;
-    --border-color: #eeeeee;
-    --shadow: rgba(0, 0, 0, 0.1);
-    --shadow-hover: rgba(0, 0, 0, 0.15);
-    --accent-color: #667eea;
-    --accent-hover: #5568d3;
-    --danger-color: #dc3545;
-    --success-color: #28a745;
+    --bg-tertiary: rgba(248, 250, 252, 0.95);
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-tertiary: #94a3b8;
+    --border-color: #e2e8f0;
+    --shadow: rgba(15, 23, 42, 0.08);
+    --shadow-hover: rgba(15, 23, 42, 0.12);
+    --accent-color: #0ea5e9;
+    --accent-hover: #0284c7;
+    --danger-color: #ef4444;
+    --success-color: #10b981;
 }
 
 [data-theme="dark"] {
@@ -364,15 +364,6 @@ body {
 
 .auth-link a:hover {
     color: var(--accent-hover);
-    text-decoration: underline;
-}
-
-.auth-link a {
-    color: #667eea;
-    text-decoration: none;
-}
-
-.auth-link a:hover {
     text-decoration: underline;
 }
 
@@ -914,7 +905,7 @@ body {
 }
 
 .search-result-item.error {
-    color: #dc3545;
+    color: var(--danger-color);
     cursor: default;
 }
 
@@ -922,10 +913,11 @@ body {
 .expense-actions {
     margin-top: 15px;
     padding-top: 15px;
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--border-color);
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
+    transition: border-color 0.3s ease;
 }
 
 .balance-actions {
@@ -1018,8 +1010,9 @@ body {
 /* Expense Date */
 .expense-date {
     font-size: 12px;
-    color: #999;
+    color: var(--text-tertiary);
     margin: 5px 0 0 0;
+    transition: color 0.3s ease;
 }
 
 /* Pagination */

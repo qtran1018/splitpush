@@ -105,15 +105,14 @@ function closeCreateGroupModal() {
     document.getElementById('create-group-form').reset();
 }
 
-document.getElementById('create-group-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const formData = {
-        name: document.getElementById('group-name').value,
-        description: document.getElementById('group-description').value || ''
-    };
+const createGroupForm = document.getElementById('create-group-form');
+if (createGroupForm) {
+    protectFormSubmission(createGroupForm, async (e) => {
+        const formData = {
+            name: document.getElementById('group-name').value,
+            description: document.getElementById('group-description').value || ''
+        };
 
-    try {
         const response = await fetch('/api/groups', {
             method: 'POST',
             headers: {
@@ -128,12 +127,13 @@ document.getElementById('create-group-form').addEventListener('submit', async (e
         } else {
             const data = await response.json();
             alert('Error: ' + (data.error || 'Failed to create group'));
+            throw new Error('Request failed'); // Re-enable form on error
         }
-    } catch (error) {
-        console.error('Error creating group:', error);
-        alert('An error occurred. Please try again.');
-    }
-});
+    }, {
+        loadingText: 'Creating...',
+        submitButtonSelector: 'button[type="submit"]'
+    });
+}
 
 function showJoinGroupModal() {
     document.getElementById('join-group-modal').style.display = 'block';
@@ -208,10 +208,32 @@ function showAddMemberModal(groupId) {
     setTimeout(setupMemberSearch, 100);
 }
 
+// Track leave operations to prevent duplicates
+const leaveOperations = new Set();
+
 async function leaveGroup(groupId) {
     if (!confirm('Are you sure you want to leave this group? You will no longer have access to it.')) {
         return;
     }
+    
+    // Prevent duplicate leave operations
+    if (leaveOperations.has(groupId)) {
+        console.warn('Leave operation already in progress for group:', groupId);
+        return;
+    }
+    
+    leaveOperations.add(groupId);
+    
+    // Find and disable the leave button
+    const leaveButtons = document.querySelectorAll(`button[onclick*="leaveGroup('${groupId}')"], button[onclick*="leaveGroup(\"${groupId}\")"]`);
+    const originalTexts = [];
+    leaveButtons.forEach((btn, idx) => {
+        originalTexts[idx] = btn.textContent;
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        btn.textContent = 'Leaving...';
+    });
     
     try {
         const response = await fetch(`/api/groups/${groupId}/leave`, {
@@ -228,11 +250,46 @@ async function leaveGroup(groupId) {
     } catch (error) {
         console.error('Error leaving group:', error);
         alert('An error occurred. Please try again.');
+    } finally {
+        // Re-enable buttons after a delay
+        setTimeout(() => {
+            leaveOperations.delete(groupId);
+            leaveButtons.forEach((btn, idx) => {
+                btn.disabled = false;
+                btn.style.opacity = '';
+                btn.style.cursor = '';
+                btn.textContent = originalTexts[idx];
+            });
+        }, 500);
     }
 }
 
+// Track add member operations to prevent duplicates
+const addMemberOperations = new Set();
+
 async function addMemberToGroup(userId, username, name) {
     const groupId = document.getElementById('add-member-group-id').value;
+    const operationKey = `${groupId}-${userId}`;
+    
+    // Prevent duplicate add member operations
+    if (addMemberOperations.has(operationKey)) {
+        console.warn('Add member operation already in progress:', operationKey);
+        return;
+    }
+    
+    addMemberOperations.add(operationKey);
+    
+    // Find and disable the search result item that was clicked
+    const searchResultItems = document.querySelectorAll('.search-result-item');
+    let clickedItem = null;
+    searchResultItems.forEach(item => {
+        if (item.onclick && item.onclick.toString().includes(`addMemberToGroup(${userId}`)) {
+            clickedItem = item;
+            item.style.opacity = '0.6';
+            item.style.cursor = 'not-allowed';
+            item.style.pointerEvents = 'none';
+        }
+    });
     
     try {
         const response = await fetch(`/api/groups/${encodeURIComponent(groupId)}/members`, {
@@ -254,20 +311,29 @@ async function addMemberToGroup(userId, username, name) {
     } catch (error) {
         console.error('Error adding member:', error);
         alert('An error occurred. Please try again.');
+    } finally {
+        // Re-enable after a delay
+        setTimeout(() => {
+            addMemberOperations.delete(operationKey);
+            if (clickedItem) {
+                clickedItem.style.opacity = '';
+                clickedItem.style.cursor = '';
+                clickedItem.style.pointerEvents = '';
+            }
+        }, 500);
     }
 }
 
-document.getElementById('join-group-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const groupId = document.getElementById('group-id').value.trim();
-    
-    if (!groupId) {
-        alert('Please enter a group ID');
-        return;
-    }
-    
-    try {
+const joinGroupForm = document.getElementById('join-group-form');
+if (joinGroupForm) {
+    protectFormSubmission(joinGroupForm, async (e) => {
+        const groupId = document.getElementById('group-id').value.trim();
+        
+        if (!groupId) {
+            alert('Please enter a group ID');
+            throw new Error('Validation failed'); // Stop submission
+        }
+        
         const response = await fetch(`/api/groups/${encodeURIComponent(groupId)}/join`, {
             method: 'POST'
         });
@@ -279,12 +345,13 @@ document.getElementById('join-group-form')?.addEventListener('submit', async (e)
         } else {
             const data = await response.json();
             alert('Error: ' + (data.error || 'Failed to join group'));
+            throw new Error('Request failed'); // Re-enable form on error
         }
-    } catch (error) {
-        console.error('Error joining group:', error);
-        alert('An error occurred. Please try again.');
-    }
-});
+    }, {
+        loadingText: 'Joining...',
+        submitButtonSelector: 'button[type="submit"]'
+    });
+}
 
 
 function copyGroupId(groupId) {
@@ -354,14 +421,13 @@ function closeEditDescriptionModal() {
     document.getElementById('edit-description-form').reset();
 }
 
-document.getElementById('edit-description-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const groupId = document.getElementById('edit-description-group-id').value;
-    const name = document.getElementById('edit-group-name').value;
-    const description = document.getElementById('edit-description-text').value;
-    
-    try {
+const editDescriptionForm = document.getElementById('edit-description-form');
+if (editDescriptionForm) {
+    protectFormSubmission(editDescriptionForm, async (e) => {
+        const groupId = document.getElementById('edit-description-group-id').value;
+        const name = document.getElementById('edit-group-name').value;
+        const description = document.getElementById('edit-description-text').value;
+        
         const response = await fetch(`/api/groups/${encodeURIComponent(groupId)}`, {
             method: 'PUT',
             headers: {
@@ -376,12 +442,13 @@ document.getElementById('edit-description-form')?.addEventListener('submit', asy
         } else {
             const data = await response.json();
             alert('Error: ' + (data.error || 'Failed to update group'));
+            throw new Error('Request failed'); // Re-enable form on error
         }
-    } catch (error) {
-        console.error('Error updating group:', error);
-        alert('An error occurred. Please try again.');
-    }
-});
+    }, {
+        loadingText: 'Saving...',
+        submitButtonSelector: 'button[type="submit"]'
+    });
+}
 
 // Close modals when clicking outside
 window.onclick = function(event) {

@@ -208,20 +208,19 @@ function closeSettlementModal() {
     document.getElementById('settlement-form').reset();
 }
 
-document.getElementById('settlement-form')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const payeeUserId = parseInt(document.getElementById('settlement-payee-id').value);
-    const tripGroupId = document.getElementById('settlement-group').value;
-    const amount = parseFloat(document.getElementById('settlement-amount').value);
-    
-    const settlementData = {
-        payeeUserId: payeeUserId,
-        tripGroupId: tripGroupId,
-        amount: amount
-    };
-    
-    try {
+const settlementForm = document.getElementById('settlement-form');
+if (settlementForm) {
+    protectFormSubmission(settlementForm, async (e) => {
+        const payeeUserId = parseInt(document.getElementById('settlement-payee-id').value);
+        const tripGroupId = document.getElementById('settlement-group').value;
+        const amount = parseFloat(document.getElementById('settlement-amount').value);
+        
+        const settlementData = {
+            payeeUserId: payeeUserId,
+            tripGroupId: tripGroupId,
+            amount: amount
+        };
+        
         const response = await fetch('/api/settlements', {
             method: 'POST',
             headers: {
@@ -236,12 +235,13 @@ document.getElementById('settlement-form')?.addEventListener('submit', async (e)
         } else {
             const data = await response.json();
             alert('Error: ' + (data.error || 'Failed to record settlement'));
+            throw new Error('Request failed'); // Re-enable form on error
         }
-    } catch (error) {
-        console.error('Error recording settlement:', error);
-        alert('An error occurred. Please try again.');
-    }
-});
+    }, {
+        loadingText: 'Recording...',
+        submitButtonSelector: 'button[type="submit"]'
+    });
+}
 
 // Close modal when clicking outside
 window.onclick = function(event) {
