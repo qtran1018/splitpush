@@ -36,6 +36,11 @@
         <h2>Your Settlements</h2>
         <p class="subtitle">View all your recorded settlements</p>
 
+        <div class="form-group" style="max-width: 500px; margin-bottom: 20px;">
+            <label for="settlement-search">Search by Group Name or Group ID</label>
+            <input type="text" id="settlement-search" name="search" placeholder="Type group name or ID to filter..." autocomplete="off">
+        </div>
+
         <div id="settlements-container" class="settlements-list">
             <div class="loading">Loading settlements...</div>
         </div>

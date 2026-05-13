@@ -1,7 +1,9 @@
 let currentUser = null;
 let settlementsData = [];
+let filteredSettlementsData = [];
 let settlementsPage = 0;
 const settlementsPageSize = 10;
+let searchFilter = '';
 
 async function loadCurrentUser() {
     try {
@@ -14,24 +16,45 @@ async function loadCurrentUser() {
     }
 }
 
+function filterSettlements() {
+    if (!searchFilter.trim()) {
+        filteredSettlementsData = settlementsData;
+    } else {
+        const searchLower = searchFilter.toLowerCase().trim();
+        filteredSettlementsData = settlementsData.filter(settlement => {
+            const groupName = (settlement.tripGroup?.name || '').toLowerCase();
+            const groupId = (settlement.tripGroup?.id || '').toString().toLowerCase();
+            return groupName.includes(searchLower) || groupId.includes(searchLower);
+        });
+    }
+    // Reset to first page when filtering
+    settlementsPage = 0;
+    renderSettlements(0);
+}
+
 function renderSettlements(page = 0) {
     const container = document.getElementById('settlements-container');
     const noSettlements = document.getElementById('no-settlements');
     const paginationContainer = document.getElementById('settlements-pagination');
 
-    if (!settlementsData || settlementsData.length === 0) {
+    if (!filteredSettlementsData || filteredSettlementsData.length === 0) {
         container.style.display = 'none';
         noSettlements.style.display = 'block';
+        if (searchFilter.trim()) {
+            noSettlements.innerHTML = '<p>No settlements found matching your search.</p>';
+        } else {
+            noSettlements.innerHTML = '<p>No settlements recorded yet.</p>';
+        }
         paginationContainer.style.display = 'none';
         return;
     }
 
-    const totalPages = Math.ceil(settlementsData.length / settlementsPageSize);
+    const totalPages = Math.ceil(filteredSettlementsData.length / settlementsPageSize);
     settlementsPage = Math.min(Math.max(page, 0), totalPages - 1);
 
     const start = settlementsPage * settlementsPageSize;
     const end = start + settlementsPageSize;
-    const pageItems = settlementsData.slice(start, end);
+    const pageItems = filteredSettlementsData.slice(start, end);
 
     container.style.display = 'flex';
     noSettlements.style.display = 'none';
@@ -128,6 +151,7 @@ async function loadSettlements() {
         settlements.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
         settlementsData = settlements;
+        filteredSettlementsData = settlements;
         renderSettlements(0);
     } catch (error) {
         console.error('Error loading settlements:', error);
@@ -144,5 +168,14 @@ async function loadSettlements() {
 document.addEventListener('DOMContentLoaded', async () => {
     await loadCurrentUser();
     loadSettlements();
+    
+    // Add search input event listener
+    const searchInput = document.getElementById('settlement-search');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            searchFilter = e.target.value;
+            filterSettlements();
+        });
+    }
 });
 
