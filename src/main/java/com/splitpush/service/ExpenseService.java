@@ -81,16 +81,21 @@ public class ExpenseService {
 
         expense = expenseRepository.save(expense);
 
+        // Batch-fetch all participant users in one query
+        Map<Long, User> participantMap = new HashMap<>();
+        userRepository.findAllById(expenseDTO.getParticipantAmounts().keySet())
+                .forEach(u -> participantMap.put(u.getId(), u));
+
+        Set<Long> memberIds = tripGroup.getMembers().stream()
+                .map(User::getId).collect(java.util.stream.Collectors.toSet());
+
         // Create participants
         BigDecimal totalParticipantAmount = BigDecimal.ZERO;
         for (Map.Entry<Long, BigDecimal> entry : expenseDTO.getParticipantAmounts().entrySet()) {
-            User participant = userRepository.findById(entry.getKey())
-                    .orElseThrow(() -> new RuntimeException("User not found: " + entry.getKey()));
+            User participant = participantMap.get(entry.getKey());
+            if (participant == null) throw new RuntimeException("User not found: " + entry.getKey());
 
-            // Validate that participant is a member of the trip group - compare by ID
-            boolean participantIsMember = tripGroup.getMembers().stream()
-                    .anyMatch(member -> member.getId().equals(participant.getId()));
-            if (!participantIsMember) {
+            if (!memberIds.contains(participant.getId())) {
                 throw new RuntimeException("User " + participant.getUsername() + " is not a member of this trip group");
             }
 
@@ -152,16 +157,21 @@ public class ExpenseService {
         expenseParticipantRepository.deleteAll(expense.getParticipants());
         expense.getParticipants().clear();
 
+        // Batch-fetch all participant users in one query
+        Map<Long, User> participantMap = new HashMap<>();
+        userRepository.findAllById(expenseDTO.getParticipantAmounts().keySet())
+                .forEach(u -> participantMap.put(u.getId(), u));
+
+        Set<Long> memberIds = tripGroup.getMembers().stream()
+                .map(User::getId).collect(java.util.stream.Collectors.toSet());
+
         // Create new participants
         BigDecimal totalParticipantAmount = BigDecimal.ZERO;
         for (Map.Entry<Long, BigDecimal> entry : expenseDTO.getParticipantAmounts().entrySet()) {
-            User participant = userRepository.findById(entry.getKey())
-                    .orElseThrow(() -> new RuntimeException("User not found: " + entry.getKey()));
+            User participant = participantMap.get(entry.getKey());
+            if (participant == null) throw new RuntimeException("User not found: " + entry.getKey());
 
-            // Validate participant is a member - compare by ID
-            boolean participantIsMember = tripGroup.getMembers().stream()
-                    .anyMatch(member -> member.getId().equals(participant.getId()));
-            if (!participantIsMember) {
+            if (!memberIds.contains(participant.getId())) {
                 throw new RuntimeException("User " + participant.getUsername() + " is not a member of this trip group");
             }
 
@@ -189,14 +199,6 @@ public class ExpenseService {
 
     @Cacheable(value = "expensesByGroup", key = "#tripGroupId + ':' + (#currentUserId != null ? #currentUserId : 'anonymous') + ':' + (#page != null ? #page : 0) + ':' + (#size != null ? #size : 10)")
     public Page<Expense> getExpensesByTripGroup(String tripGroupId, Long currentUserId, Integer page, Integer size) {
-        // Calculate cache key for logging
-        int pageNum = (page != null && page >= 0) ? page : 0;
-        int sizeNum = (size != null && size > 0) ? size : 10;
-        String cacheKey = tripGroupId + ":" + (currentUserId != null ? currentUserId : "anonymous") + ":" + pageNum + ":" + sizeNum;
-        System.out.println("[CACHE DEBUG] ⚠️ CACHE MISS - Executing method body");
-        System.out.println("[CACHE DEBUG] Cache key: " + cacheKey);
-        System.out.println("[CACHE DEBUG] Parameters: groupId=" + tripGroupId + ", userId=" + currentUserId + ", page=" + page + ", size=" + size);
-        
         TripGroup tripGroup = tripGroupRepository.findById(tripGroupId)
                 .orElseThrow(() -> new RuntimeException("Trip group not found"));
 
@@ -214,10 +216,7 @@ public class ExpenseService {
         int pageSize = (size != null && size > 0) ? size : 10;
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
 
-        Page<Expense> result = expenseRepository.findByTripGroupOrderByCreatedAtDesc(tripGroup, pageable);
-        System.out.println("[CACHE DEBUG] Found " + result.getContent().size() + " expenses, storing in cache");
-        System.out.println("[CACHE DEBUG] ✅ Result cached. Next request with same key should be served from cache.");
-        return result;
+        return expenseRepository.findByTripGroupOrderByCreatedAtDesc(tripGroup, pageable);
     }
 
     @Cacheable(value = "expenseById", key = "#id")
@@ -312,12 +311,20 @@ public class ExpenseService {
             }
         }
 
+        // Batch-fetch all users with non-zero balances in one query
+        List<Long> nonZeroUserIds = balances.entrySet().stream()
+                .filter(e -> e.getValue().compareTo(BigDecimal.ZERO) != 0)
+                .map(Map.Entry::getKey)
+                .collect(java.util.stream.Collectors.toList());
+        Map<Long, User> userMap = new HashMap<>();
+        userRepository.findAllById(nonZeroUserIds).forEach(u -> userMap.put(u.getId(), u));
+
         // Convert to BalanceDTO list
         List<BalanceDTO> balanceList = new ArrayList<>();
         for (Map.Entry<Long, BigDecimal> entry : balances.entrySet()) {
             if (entry.getValue().compareTo(BigDecimal.ZERO) != 0) {
-                User otherUser = userRepository.findById(entry.getKey())
-                        .orElseThrow(() -> new RuntimeException("User not found"));
+                User otherUser = userMap.get(entry.getKey());
+                if (otherUser == null) continue;
 
                 Map<String, BigDecimal> perGroup = breakdownsByName.getOrDefault(entry.getKey(), Collections.emptyMap());
                 // Normalize scales (by name)
@@ -370,8 +377,8 @@ public class ExpenseService {
         
         BigDecimal balance = BigDecimal.ZERO;
         
-        // Get all expenses for this group
-        List<Expense> groupExpenses = expenseRepository.findByTripGroup(tripGroup);
+        // Fetch expenses with participants in one query to avoid lazy-load N+1
+        List<Expense> groupExpenses = expenseRepository.findByTripGroupWithParticipants(tripGroup);
         
         // Calculate from expenses
         for (Expense expense : groupExpenses) {

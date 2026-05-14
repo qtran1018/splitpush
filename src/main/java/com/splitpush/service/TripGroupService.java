@@ -10,9 +10,9 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.splitpush.dto.BalanceDTO;
 import java.util.List;
 import java.util.Optional;
-import java.math.BigDecimal;
 
 @Service
 @Transactional
@@ -97,14 +97,15 @@ public class TripGroupService {
             throw new RuntimeException("You are not a member of this group");
         }
 
-        // Prevent leaving if any balances remain in this group (owed or owing)
-        for (User member : group.getMembers()) {
-            if (!member.getId().equals(userId)) {
-                BigDecimal balance = expenseService.calculateBalanceForGroup(userId, member.getId(), groupId);
-                if (balance.compareTo(BigDecimal.ZERO) != 0) {
-                    throw new RuntimeException("You must settle all balances in this group before leaving.");
-                }
-            }
+        // Prevent leaving if any balances remain in this group (owed or owing).
+        // calculateBalances is cached, so this is at most one DB round-trip.
+        List<BalanceDTO> balances = expenseService.calculateBalances(userId);
+        boolean hasUnpaidBalance = balances.stream()
+                .flatMap(b -> b.getGroupBreakdownDetails().stream())
+                .anyMatch(b -> b.getGroupId().equals(groupId)
+                        && b.getAmount().compareTo(java.math.BigDecimal.ZERO) != 0);
+        if (hasUnpaidBalance) {
+            throw new RuntimeException("You must settle all balances in this group before leaving.");
         }
 
         group.getMembers().removeIf(m -> m.getId().equals(userId));

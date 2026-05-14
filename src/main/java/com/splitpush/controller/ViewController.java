@@ -18,12 +18,12 @@ public class ViewController {
 
     @GetMapping("/login")
     public String login() {
-        return "login";
+        return "redirect:/oauth2/authorization/keycloak";
     }
 
     @GetMapping("/register")
     public String register() {
-        return "register";
+        return "redirect:http://localhost:8180/realms/travel-platform/protocol/openid-connect/registrations?client_id=splitpush&response_type=code&scope=openid&redirect_uri=http://localhost:8080/login/oauth2/code/keycloak";
     }
 
     @GetMapping("/dashboard")

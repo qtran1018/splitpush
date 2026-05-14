@@ -3,7 +3,6 @@ package com.splitpush.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import java.util.HashSet;
@@ -16,23 +15,18 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
     @Size(min = 3, max = 50)
     @Column(unique = true, nullable = false)
     private String username;
 
-    @NotBlank
     @Email
     @Column(unique = true, nullable = false)
     private String email;
 
-    @NotBlank
-    @Size(min = 6)
-    @Column(nullable = false)
+    @Column(nullable = true)
     @JsonIgnore
     private String password;
 
-    @NotBlank
     @Size(max = 100)
     private String name;
 
