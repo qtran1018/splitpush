@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" th:href="@{/favicon.svg}">
+    <title>Join Group - Splitpush</title>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <style>
+        .invite-page {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 70vh;
+            padding: 2rem;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .invite-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px var(--shadow), 0 8px 16px var(--shadow);
+            padding: 3rem 2.5rem;
+            max-width: 440px;
+            width: 100%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .invite-icon {
+            font-size: 3rem;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .invite-title {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0.25rem 0 0;
+            letter-spacing: -0.3px;
+        }
+
+        .invite-subtitle {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin: 0.25rem 0;
+            line-height: 1.5;
+        }
+
+        .invite-group-name {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--accent-color);
+            margin: 0.25rem 0 1rem;
+            padding: 0.5rem 1.25rem;
+            background: color-mix(in srgb, var(--accent-color) 10%, transparent);
+            border-radius: 8px;
+            border: 1px solid color-mix(in srgb, var(--accent-color) 25%, transparent);
+        }
+
+        .invite-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            width: 100%;
+            margin-top: 0.75rem;
+        }
+
+        .invite-actions .btn {
+            width: 100%;
+            padding: 0.75rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            text-align: center;
+            transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+        }
+
+        .invite-actions .btn:active {
+            transform: translateY(1px);
+        }
+
+        .invite-subtitle--error {
+            color: var(--danger-color);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 480px) {
+            .invite-card { padding: 2rem 1.5rem; }
+            .invite-title { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="nav-brand">Splitpush</h1>
+            <div class="nav-links">
+                <a th:href="@{/}" class="nav-link">Home</a>
+                <button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">🌙</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Valid invite -->
+    <div class="invite-page" th:if="${error == null}">
+        <div class="invite-card">
+            <span class="invite-icon">🌍</span>
+            <h2 class="invite-title">You've been invited!</h2>
+            <p class="invite-subtitle">
+                <strong th:text="${inviterName}">Someone</strong> has invited you to join
+            </p>
+            <p class="invite-group-name" th:text="${groupName}">a group</p>
+
+            <!-- Authenticated -->
+            <div th:if="${authenticated}" class="invite-actions">
+                <a th:href="@{/invite/{token}/join(token=${token})}" class="btn btn-primary">Join Group</a>
+                <a th:href="@{/groups}" class="btn btn-secondary">Cancel</a>
+            </div>
+
+            <!-- Not authenticated -->
+            <div th:unless="${authenticated}" class="invite-actions">
+                <a th:href="@{/invite/{token}/join(token=${token})}" class="btn btn-primary">Log In to Join</a>
+                <a th:href="@{/register}" class="btn btn-secondary">Create Account</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Invalid invite -->
+    <div class="invite-page" th:if="${error != null}">
+        <div class="invite-card">
+            <span class="invite-icon">🔗</span>
+            <h2 class="invite-title">Invalid Invite</h2>
+            <p class="invite-subtitle invite-subtitle--error" th:text="${error}">This invite link is not valid.</p>
+            <div class="invite-actions">
+                <a th:href="@{/}" class="btn btn-primary">Go Home</a>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/js/theme-toggle.js}"></script>
+</body>
+</html>

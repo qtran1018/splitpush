@@ -441,5 +441,31 @@ class ExpenseServiceTest {
         assertEquals(new BigDecimal("-60.00"), balance.getGroupBreakdown().get("Test Group"));
         assertEquals(new BigDecimal("-40.00"), balance.getGroupBreakdown().get("Group 2"));
     }
+
+    // ── Exception path tests ─────────────────────────────────────────────────
+
+    @Test
+    void createExpense_tripGroupNotFound_throwsRuntimeException() {
+        expenseDTO.setParticipantAmounts(Map.of(1L, new BigDecimal("100.00")));
+        when(tripGroupRepository.findById("group1")).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> expenseService.createExpense(expenseDTO, 1L));
+    }
+
+    @Test
+    void createExpense_paidByUserNotMember_throwsRuntimeException() {
+        expenseDTO.setPaidByUserId(99L); // not a member
+        expenseDTO.setParticipantAmounts(Map.of(1L, new BigDecimal("100.00")));
+        when(tripGroupRepository.findById("group1")).thenReturn(Optional.of(tripGroup));
+
+        assertThrows(RuntimeException.class, () -> expenseService.createExpense(expenseDTO, 1L));
+    }
+
+    @Test
+    void calculateBalances_userNotFound_throwsRuntimeException() {
+        when(userRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> expenseService.calculateBalances(999L));
+    }
 }
 

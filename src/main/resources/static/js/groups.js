@@ -69,6 +69,7 @@ async function loadGroups() {
                         <!-- Add Member button hidden for now, may be used later -->
                         <!-- <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); showAddMemberModal('${group.id}')">Add Member</button> -->
                         ${editButton}
+                        <button class="btn btn-secondary btn-sm" id="invite-btn-${group.id}" onclick="event.stopPropagation(); copyInviteLink('${group.id}')">Copy Invite Link</button>
                         <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); leaveGroup('${group.id}')">Leave Group</button>
                     </div>
                 </div>
@@ -497,6 +498,29 @@ function setupDescriptionCounters() {
                 editCount.textContent = `${editDesc.value.length}/36 characters`;
             }
         };
+    }
+}
+
+async function copyInviteLink(groupId) {
+    const btn = document.getElementById(`invite-btn-${groupId}`);
+    if (btn) { btn.disabled = true; btn.textContent = 'Generating...'; }
+
+    try {
+        const response = await fetch('/api/invite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ groupId })
+        });
+        if (!response.ok) throw new Error('Failed to create invite');
+        const data = await response.json();
+        const link = `${window.location.origin}/invite/${data.token}`;
+        await navigator.clipboard.writeText(link);
+        if (btn) { btn.textContent = 'Copied!'; }
+        setTimeout(() => { if (btn) { btn.disabled = false; btn.textContent = 'Copy Invite Link'; } }, 2500);
+    } catch (err) {
+        console.error('Error creating invite link:', err);
+        if (btn) { btn.disabled = false; btn.textContent = 'Copy Invite Link'; }
+        alert('Failed to generate invite link. Please try again.');
     }
 }
 
