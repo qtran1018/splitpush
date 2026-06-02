@@ -16,13 +16,13 @@ COPY src ./src
 # Using -U to update dependencies
 RUN mvn clean package -DskipTests -B -U
 
-# Runtime stage
-FROM eclipse-temurin:17-jre-alpine
+# Runtime stage — use jammy (Ubuntu 22.04) which has ARM64 support unlike alpine
+FROM eclipse-temurin:17-jre-jammy
 
 WORKDIR /app
 
 # Create non-root user
-RUN addgroup -S spring && adduser -S spring -G spring
+RUN groupadd -r spring && useradd -r -g spring spring
 USER spring:spring
 
 # Copy the built JAR from build stage
