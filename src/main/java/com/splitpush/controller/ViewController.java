@@ -1,11 +1,18 @@
 package com.splitpush.controller;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 public class ViewController {
+
+    @Value("${keycloak.register-uri:https://auth.quangntran.com/realms/travel-platform/protocol/openid-connect/registrations}")
+    private String keycloakRegisterUri;
+
+    @Value("${app.base-url:https://splitpush.quangntran.com}")
+    private String appBaseUrl;
     @GetMapping("/")
     public String index(Authentication authentication) {
         // If user is logged in, redirect to dashboard
@@ -23,7 +30,8 @@ public class ViewController {
 
     @GetMapping("/register")
     public String register() {
-        return "redirect:http://localhost:8180/realms/travel-platform/protocol/openid-connect/registrations?client_id=splitpush&response_type=code&scope=openid&redirect_uri=http://localhost:8080/login/oauth2/code/keycloak";
+        String redirectUri = appBaseUrl + "/login/oauth2/code/keycloak";
+        return "redirect:" + keycloakRegisterUri + "?client_id=splitpush&response_type=code&scope=openid&redirect_uri=" + redirectUri;
     }
 
     @GetMapping("/dashboard")
