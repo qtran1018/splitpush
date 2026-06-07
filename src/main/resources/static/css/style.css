@@ -122,6 +122,15 @@ body {
     color: white;
 }
 
+/* Cross-app links (TravelBin, Itinerary) — dimmed to read as secondary */
+.nav-link--external {
+    opacity: 0.75;
+}
+
+.nav-link--external:hover {
+    opacity: 1;
+}
+
 /* Dark Mode Toggle */
 .theme-toggle {
     background: none;
